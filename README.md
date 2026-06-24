@@ -48,6 +48,19 @@ python main.py
 
 镜头标定 NPZ 保存在 `config/calib/`（已加入 `.gitignore`，勿提交个人标定数据）。
 
+## 打包为 exe（v1.0）
+
+```bash
+pip install pyinstaller
+pyinstaller --clean --noconfirm build.spec
+```
+
+输出目录：`dist/SerialAssistant_v1.0/`  
+主程序：`SerialAssistant_v1.0.exe`
+
+首次运行会在 exe 同目录生成可写的 `config/`（含默认配置）。  
+**注意**：若路径含中文导致打包失败，请将项目复制到纯英文路径后再打包。
+
 ## 开源协议
 
 [MIT License](LICENSE)

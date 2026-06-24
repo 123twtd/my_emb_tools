@@ -34,8 +34,75 @@
     "log_level": "INFO",
     "data_broadcast_mode": "active_tab",
     "auto_scroll": true,
-    "max_recv_lines": 0
+    "max_recv_lines": 0,
+    "max_recv_bytes": 1048576,
+    "send_shortcut": "Ctrl+Return",
+    "send_history_max": 20,
+    "recv_log_path": "",
+    "poll_sequence": [
+      {
+        "enabled": false,
+        "cmd": "C,1,{i}",
+        "var": "inc",
+        "start": 0,
+        "step": 10,
+        "end_mode": "none",
+        "end_action": "reset",
+        "list": "",
+        "end_value": 100,
+        "end_count": 10
+      }
+    ],
+    "basic_simple_mode": true,
+    "poll_interval_ms": 100,
+    "param_send": {
+      "template": "",
+      "mode": "fixed",
+      "fixed": "100",
+      "start": 0,
+      "step": 1,
+      "list": "1,2,3,4"
+    },
+    "parser_panel_visible": true,
+    "send_history": []
   },
+  "rx_parsers": [
+    {
+      "id": "13d4266b",
+      "name": "控制帧",
+      "enabled": true,
+      "header": "C",
+      "footer": "\\r\\n",
+      "delimiter": ",",
+      "encoding": "utf-8",
+      "frame_length": 0,
+      "split_mode": "delimiter",
+      "field_names": [
+        "启动",
+        "速度（cm/s）"
+      ],
+      "field_widths": [],
+      "history_max": 50
+    },
+    {
+      "id": "41ca1da3",
+      "name": "根线帧",
+      "enabled": true,
+      "header": "L",
+      "footer": "\\r\\n",
+      "delimiter": ",",
+      "encoding": "utf-8",
+      "frame_length": 0,
+      "split_mode": "delimiter",
+      "field_names": [
+        "横向偏置",
+        "前瞻航向",
+        "远端航向"
+      ],
+      "field_widths": [],
+      "history_max": 50
+    }
+  ],
   "serial_defaults": {
     "baudrate": "9600",
     "databits": "8",

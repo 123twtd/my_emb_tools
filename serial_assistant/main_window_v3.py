@@ -8,7 +8,7 @@ import importlib
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QGroupBox, QLabel, QComboBox, QPushButton, QLineEdit, QSpinBox, QCheckBox,
-    QMessageBox, QTabWidget, QSizePolicy, QFrame, QStackedWidget
+    QMessageBox, QTabWidget, QSizePolicy, QFrame, QStackedWidget, QSplitter
 )
 from PyQt5.QtCore import Qt, QThread, QTimer
 from PyQt5.QtGui import QFont
@@ -21,16 +21,14 @@ from serial_assistant.style import DARK_STYLESHEET, LIGHT_STYLESHEET
 from .service_manager import ServiceManager
 from .settings_dialog import SettingsDialog
 from .style import LED_ON, LED_OFF, LED_ERR
+from app_paths import config_path as _app_config_path
 
 logger = logging.getLogger(__name__)
-
-# 工程根目录（以本文件位置为基准，不依赖工作目录）
-_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 def _config_path(filename: str) -> str:
     """获取 config/ 目录下配置文件的绝对路径"""
-    return os.path.join(_PROJECT_ROOT, "config", filename)
+    return _app_config_path(filename)
 
 
 # ── 服务面板描述表（有序，用于数据驱动 UI 构建）──────────────────
@@ -47,8 +45,9 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("串口助手 V3.0")
-        self.resize(1200, 750)
+        self.setWindowTitle("串口助手 V1.0")
+        self.resize(1280, 800)
+        self.setMinimumSize(1040, 700)
 
         # ── 通道工作对象和读取线程 ──
         self._serial_worker = SerialWorker()
@@ -142,6 +141,11 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(8, 8, 8, 8)
         main_layout.setSpacing(8)
 
+        main_splitter = QSplitter(Qt.Horizontal)
+        main_splitter.setChildrenCollapsible(False)
+        main_splitter.setHandleWidth(8)
+        main_layout.addWidget(main_splitter)
+
         # ── 左侧：Tab 容器 ──
         self._tab_widget = QTabWidget()
         
@@ -163,17 +167,25 @@ class MainWindow(QMainWindow):
         btn_settings.setCursor(Qt.PointingHandCursor)
         btn_settings.clicked.connect(self._on_open_settings)
 
+        btn_help = QPushButton("? 帮助")
+        btn_help.setObjectName("help_btn")
+        btn_help.setCursor(Qt.PointingHandCursor)
+        btn_help.setToolTip("使用说明、功能列表与更新日志")
+        btn_help.clicked.connect(self._on_open_help)
+
         corner_layout.addWidget(self.btn_theme)
+        corner_layout.addWidget(btn_help)
         corner_layout.addWidget(btn_settings)
         
         self._tab_widget.setCornerWidget(corner_widget, Qt.TopRightCorner)
         
-        main_layout.addWidget(self._tab_widget, stretch=1)
+        main_splitter.addWidget(self._tab_widget)
 
         # ── 右侧：控制面板 ──
         right_widget = QWidget()
-        right_widget.setMinimumWidth(230)
-        right_widget.setMaximumWidth(260)
+        right_widget.setMinimumWidth(220)
+        right_widget.setMaximumWidth(300)
+        right_widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
         right_layout = QVBoxLayout(right_widget)
         right_layout.setContentsMargins(0, 0, 0, 0)
         right_layout.setSpacing(8)
@@ -181,7 +193,10 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(self._build_services_group())
         right_layout.addStretch(1)
 
-        main_layout.addWidget(right_widget, stretch=0)
+        main_splitter.addWidget(right_widget)
+        main_splitter.setStretchFactor(0, 1)
+        main_splitter.setStretchFactor(1, 0)
+        main_splitter.setSizes([1020, 260])
 
     def _build_serial_config_group(self) -> QGroupBox:
         """通道配置面板"""
@@ -237,6 +252,7 @@ class MainWindow(QMainWindow):
                                         .get("baudrate", "9600"))
         self.cb_baudrate.addItems(["4800", "9600", "19200", "38400",
                                    "57600", "115200", "230400", "460800", "921600"])
+        self.cb_baudrate.setEditable(True)
         self.cb_baudrate.setCurrentText(default_baud)
         grid.addWidget(self.cb_baudrate, 1, 1)
 
@@ -461,6 +477,7 @@ class MainWindow(QMainWindow):
             if hasattr(tab_instance, "set_serial_worker"):
                 tab_instance.set_serial_worker(self._active_worker())
 
+        self._apply_settings_to_tabs()
         self._wire_camera_broadcaster()
         self._on_all_tabs_loaded()
 
@@ -502,6 +519,7 @@ class MainWindow(QMainWindow):
             from .tabs.basic_tab import BasicSerialTab
             self._tab_instances["basic_serial"] = BasicSerialTab()
             self._tab_widget.addTab(self._tab_instances["basic_serial"], "基础串口")
+            self._apply_settings_to_tabs()
         except Exception as e:
             logger.error(f"Failed to load BasicSerialTab: {e}")
             failures.append(("基础串口", str(e)))
@@ -631,6 +649,10 @@ class MainWindow(QMainWindow):
 
     # ══════════════════ 设置对话框 ════════════════════════════════
 
+    def _on_open_help(self):
+        from .help_dialog import HelpDialog
+        HelpDialog(self).exec_()
+
     def _on_open_settings(self):
         dlg = SettingsDialog(self._app_config, parent=self)
         if dlg.exec_() == SettingsDialog.Accepted:
@@ -643,7 +665,17 @@ class MainWindow(QMainWindow):
             )
             self._refresh_service_bind_labels()
             self._refresh_api_urls_in_tabs()
+            self._apply_settings_to_tabs()
             logger.info("Settings updated")
+
+    def _apply_settings_to_tabs(self):
+        for tab in self._tab_instances.values():
+            if hasattr(tab, "apply_app_settings"):
+                tab.apply_app_settings(self._app_config)
+            elif getattr(tab, "is_loaded", False) and getattr(tab, "_loaded_tab", None):
+                inst = tab._loaded_tab
+                if hasattr(inst, "apply_app_settings"):
+                    inst.apply_app_settings(self._app_config)
 
     # ══════════════════ 事件处理 ══════════════════════════════════
 
@@ -698,9 +730,14 @@ class MainWindow(QMainWindow):
             if not port:
                 QMessageBox.warning(self, "提示", "请先选择串口")
                 return
+            try:
+                baud = int(self.cb_baudrate.currentText().strip())
+            except ValueError:
+                QMessageBox.warning(self, "提示", "波特率必须是整数")
+                return
             success = self._serial_worker.open_channel(
                 port=port,
-                baudrate=int(self.cb_baudrate.currentText()),
+                baudrate=baud,
                 data_bits=int(self.cb_databits.currentText()),
                 stop_bits=float(self.cb_stopbits.currentText()),
                 parity=self.cb_parity.currentText(),

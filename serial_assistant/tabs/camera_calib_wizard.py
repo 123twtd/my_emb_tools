@@ -16,8 +16,10 @@ from PyQt5.QtWidgets import (
     QLineEdit, QCheckBox, QFormLayout, QApplication,
 )
 
-_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-_ARUCO_CONFIG = os.path.join(_PROJECT_ROOT, "config", "aruco_config.yaml")
+from app_paths import app_root, config_path
+
+_PROJECT_ROOT = app_root()
+_ARUCO_CONFIG = config_path("aruco_config.yaml")
 
 try:
     import cv2

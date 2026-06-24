@@ -21,9 +21,12 @@ from PyQt5.QtWidgets import (
 
 logger = logging.getLogger(__name__)
 
+from .widgets.key_sequence_capture import KeySequenceCaptureWidget, DEFAULT_SEND_SHORTCUT
+
 # 配置文件路径（以本文件为基准）
-_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-_CONFIG_PATH  = os.path.join(_PROJECT_ROOT, "config", "app.json")
+from app_paths import config_path
+
+_CONFIG_PATH = config_path("app.json")
 
 
 class SettingsDialog(QDialog):
@@ -55,6 +58,7 @@ class SettingsDialog(QDialog):
         self._tabs = QTabWidget()
         self._tabs.addTab(self._build_network_tab(),     "网络服务")
         self._tabs.addTab(self._build_display_tab(),     "显示与行为")
+        self._tabs.addTab(self._build_send_tab(),        "发送")
         self._tabs.addTab(self._build_serial_tab(),      "串口默认值")
         layout.addWidget(self._tabs, stretch=1)
 
@@ -169,7 +173,47 @@ class SettingsDialog(QDialog):
         self._sp_max_lines.setSuffix(" 行")
         gl.addWidget(self._sp_max_lines, 1, 1)
 
+        gl.addWidget(QLabel("接收区上限 (字节):"), 2, 0)
+        self._sp_max_bytes = QSpinBox()
+        self._sp_max_bytes.setRange(0, 100_000_000)
+        self._sp_max_bytes.setSingleStep(65536)
+        self._sp_max_bytes.setValue(1048576)
+        self._sp_max_bytes.setSuffix(" B")
+        self._sp_max_bytes.setToolTip("0=不限；超出后删除最旧内容，防止长时间抓包卡死")
+        gl.addWidget(self._sp_max_bytes, 2, 1)
+
         layout.addWidget(group_recv)
+        layout.addStretch(1)
+        return widget
+
+    # ── 发送 Tab ───────────────────────────────────────
+
+    def _build_send_tab(self) -> QWidget:
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(10)
+
+        group = QGroupBox("发送行为")
+        grid = QGridLayout(group)
+        grid.setContentsMargins(8, 14, 8, 8)
+
+        grid.addWidget(QLabel("发送快捷键:"), 0, 0)
+        self._key_capture = KeySequenceCaptureWidget(DEFAULT_SEND_SHORTCUT)
+        grid.addWidget(self._key_capture, 0, 1)
+
+        grid.addWidget(QLabel("发送历史条数:"), 1, 0)
+        self._sp_history_max = QSpinBox()
+        self._sp_history_max.setRange(5, 500)
+        self._sp_history_max.setValue(20)
+        grid.addWidget(self._sp_history_max, 1, 1)
+
+        grid.addWidget(QLabel("接收落盘路径:"), 2, 0)
+        self._ed_log_path = QLineEdit()
+        self._ed_log_path.setPlaceholderText("留空则在勾选「接收落盘」时选择文件")
+        grid.addWidget(self._ed_log_path, 2, 1)
+
+        layout.addWidget(group)
         layout.addStretch(1)
         return widget
 
@@ -239,6 +283,11 @@ class SettingsDialog(QDialog):
 
         self._cb_auto_scroll.setChecked(settings.get("auto_scroll", True))
         self._sp_max_lines.setValue(settings.get("max_recv_lines", 0))
+        self._sp_max_bytes.setValue(settings.get("max_recv_bytes", 1048576))
+
+        self._key_capture.set_sequence(settings.get("send_shortcut", DEFAULT_SEND_SHORTCUT))
+        self._sp_history_max.setValue(settings.get("send_history_max", 20))
+        self._ed_log_path.setText(settings.get("recv_log_path", "") or "")
 
         serial_defaults = self._cfg.get("serial_defaults", {})
         self._cb_def_baud.setCurrentText(str(serial_defaults.get("baudrate", "9600")))
@@ -247,7 +296,7 @@ class SettingsDialog(QDialog):
         self._cb_def_parity.setCurrentText(serial_defaults.get("parity", "无"))
 
     def _collect_values(self):
-        """将控件值写回 self._cfg"""
+        """将控件值写回 self._cfg，失败返回 False"""
         net_cfg = self._cfg.setdefault("network", {})
 
         for cfg_key in ("api_server", "websocket_server", "tcp_server"):
@@ -262,16 +311,22 @@ class SettingsDialog(QDialog):
         )
         settings["auto_scroll"]     = self._cb_auto_scroll.isChecked()
         settings["max_recv_lines"]  = self._sp_max_lines.value()
+        settings["max_recv_bytes"] = self._sp_max_bytes.value()
+        settings["send_shortcut"]   = self._key_capture.sequence()
+        settings["send_history_max"] = self._sp_history_max.value()
+        settings["recv_log_path"]   = self._ed_log_path.text().strip()
 
         serial_defaults = self._cfg.setdefault("serial_defaults", {})
         serial_defaults["baudrate"] = self._cb_def_baud.currentText()
         serial_defaults["databits"] = self._cb_def_data.currentText()
         serial_defaults["stopbits"] = self._cb_def_stop.currentText()
         serial_defaults["parity"]   = self._cb_def_parity.currentText()
+        return True
 
     def _on_save(self):
         """保存配置到 app.json 并关闭对话框"""
-        self._collect_values()
+        if self._collect_values() is False:
+            return
         try:
             with open(_CONFIG_PATH, "w", encoding="utf-8") as f:
                 json.dump(self._cfg, f, ensure_ascii=False, indent=2)

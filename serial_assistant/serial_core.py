@@ -66,6 +66,26 @@ class SerialWorker(DataChannel):
                 pass
         self._serial = None
 
+    def set_dtr(self, level: bool) -> bool:
+        """设置 DTR 引脚电平（需已打开串口）"""
+        if self._serial and self._serial.is_open:
+            try:
+                self._serial.dtr = level
+                return True
+            except serial.SerialException as e:
+                self.error_occurred.emit(f"设置 DTR 失败: {e}")
+        return False
+
+    def set_rts(self, level: bool) -> bool:
+        """设置 RTS 引脚电平（需已打开串口）"""
+        if self._serial and self._serial.is_open:
+            try:
+                self._serial.rts = level
+                return True
+            except serial.SerialException as e:
+                self.error_occurred.emit(f"设置 RTS 失败: {e}")
+        return False
+
     def send_data(self, data: bytes) -> bool:
         """发送数据（线程安全，可从任意线程调用）"""
         with self._write_lock:
