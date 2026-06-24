@@ -1,0 +1,52 @@
+{
+  "network": {
+    "api_server": {
+      "enabled": false,
+      "host": "0.0.0.0",
+      "port": 8000
+    },
+    "websocket_server": {
+      "enabled": false,
+      "host": "127.0.0.1",
+      "port": 7998
+    },
+    "tcp_server": {
+      "enabled": false,
+      "host": "0.0.0.0",
+      "port": 9999
+    }
+  },
+  "esp32cam": {
+    "default_url": "http://192.168.1.100:81/stream",
+    "auto_reconnect": true,
+    "max_buffer_frames": 3
+  },
+  "camera_broadcast": {
+    "enabled": false,
+    "device_index": 0,
+    "fps": 15,
+    "jpeg_quality": 85,
+    "max_device_scan": 6
+  },
+  "settings": {
+    "theme": "dark",
+    "language": "zh-CN",
+    "log_level": "INFO",
+    "data_broadcast_mode": "active_tab",
+    "auto_scroll": true,
+    "max_recv_lines": 0
+  },
+  "serial_defaults": {
+    "baudrate": "9600",
+    "databits": "8",
+    "stopbits": "1",
+    "parity": "无"
+  },
+  "udp_defaults": {
+    "local_host": "0.0.0.0",
+    "local_port": 8888,
+    "remote_host": "127.0.0.1",
+    "remote_port": 8889,
+    "reply_to_last": true
+  }
+}

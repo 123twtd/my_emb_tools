@@ -1,0 +1,18 @@
+name: serial-assistant
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pyqt=5.15
+  - numpy>=1.21
+  - pyserial=3.5
+  - pip:
+    - pyqtgraph>=0.13
+    - Pillow>=9.0
+    - fastapi>=0.104
+    - uvicorn>=0.24
+    - websockets>=12.0
+    - mcp>=0.9.0
+    - opencv-python>=4.8
+    - requests>=2.28

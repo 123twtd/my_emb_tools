@@ -1,0 +1,58 @@
+aruco:
+  dict_type: DICT_4X4_50
+  marker_size: 0.05
+aruco_params:
+  minMarkerPerimeterRate: 0.02
+  adaptiveThreshWinSizeMin: 3
+  adaptiveThreshWinSizeMax: 23
+  adaptiveThreshWinSizeStep: 10
+  cornerRefinementMethod: NONE
+world_coordinates:
+  1:
+  - 100.0
+  - 0.0
+  2:
+  - 0.0
+  - 0.0
+  3:
+  - 0.0
+  - 100.0
+  4:
+  - 100.0
+  - 100.0
+vehicle_id: 0
+min_marker_count: 4
+ui:
+  trace_window_ms: 500
+camera:
+  fps_hint: 30
+undistort:
+  enabled: true
+  use_mode: auto
+  manual_profile_id: default
+  profiles:
+    default:
+      name: 默认（无标定）
+      npz_path: null
+      camera_matrix:
+      - - 800.0
+        - 0.0
+        - 320.0
+      - - 0.0
+        - 800.0
+        - 240.0
+      - - 0.0
+        - 0.0
+        - 1.0
+      dist_coeffs:
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      bind_camera_uid: null
+      bind_camera_name: null
+      rms: null
+      board_cols: 9
+      board_rows: 6
+      square_mm: 25.0

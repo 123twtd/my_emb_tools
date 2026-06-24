@@ -1,0 +1,40 @@
+{
+  "tabs": [
+    {
+      "tab_id": "basic_serial",
+      "title": "基础串口",
+      "order": 1,
+      "enabled": true,
+      "module": "serial_assistant.tabs.basic_tab",
+      "class": "BasicSerialTab"
+    },
+    {
+      "tab_id": "oscilloscope",
+      "title": "示波器",
+      "order": 2,
+      "enabled": true,
+      "module": "serial_assistant.tabs.oscilloscope_tab",
+      "class": "OscilloscopeTab"
+    },
+    {
+      "tab_id": "image_transfer",
+      "title": "图传(Beta)",
+      "order": 3,
+      "enabled": true,
+      "module": "serial_assistant.tabs.image_tab",
+      "class": "ImageTab"
+    },
+    {
+      "tab_id": "aruco_loc",
+      "title": "ArUco定位",
+      "order": 4,
+      "enabled": true,
+      "module": "serial_assistant.tabs.aruco_tab",
+      "class": "ArucoTab"
+    }
+  ],
+  "settings": {
+    "theme": "dark",
+    "language": "zh-CN"
+  }
+}
